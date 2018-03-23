@@ -3,16 +3,17 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>io.scif</groupId>
-		<artifactId>pom-scifio</artifactId>
-		<version>10.0.0</version>
-		<relativePath />
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>19.2.0</version>
+		<!-- <type>pom</type> -->
 	</parent>
 
+	<groupId>de.mpicbg</groupId>
 	<artifactId>pom-sqeazy-scifio</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
-
+	
 	<developers>
 		<developer>
 			<id>psteinb</id>
@@ -33,6 +34,8 @@
 	<name>Sqeazy SCIFIO Reader</name>
 	<description>Reader Implementation using scifio for fiji interoperability</description>
 	<inceptionYear>2018</inceptionYear>
+	<url>http://sqeazy.github.io/sqeazy/</url>
+
 	<organization>
 		<name>sqeazy</name>
 		<url>http://sqeazy.github.io/sqeazy/</url>
@@ -43,6 +46,27 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
+
+	<contributors>
+		<contributor>
+			<name>none</name>
+		</contributor>
+	</contributors>
+
+	<mailingLists>
+		<mailingList>
+			<name>ImageJ Forum</name>
+			<archive>http://forum.imagej.net/</archive>
+		</mailingList>
+	</mailingLists>
+
+	<properties>
+		<package-name>mpicbg.de</package-name>
+		<license.licenseName>lgpl_3</license.licenseName>
+		<license.copyrightOwners>Peter Steinbach, MPI CBG</license.copyrightOwners>
+		<!--<imagej.app.directory>C:/Programs/EasyScopyFiji.app/</imagej.app.directory>-->
+		<imagej.app.directory>/home/steinbac/software/fiji/bundled/</imagej.app.directory>
+	</properties>
 
 	<!-- <modules> -->
 	<!-- 	<module>core</module> -->
@@ -64,17 +88,17 @@
 		<url>https://travis-ci.org/sqeazy/scifio</url>
 	</ciManagement>
 
-	<properties>
-		<jai-imageio.version>1.0.1</jai-imageio.version>
-		<project.rootdir>${basedir}</project.rootdir>
-	</properties>
+	<!-- <properties> -->
+	<!-- 	<jai-imageio.version>1.0.1</jai-imageio.version> -->
+	<!-- 	<project.rootdir>${basedir}</project.rootdir> -->
+	<!-- </properties> -->
 
-	<!-- <repositories> -->
-	<!-- 	<repository> -->
-	<!-- 		<id>imagej.public</id> -->
-	<!-- 		<url>http://maven.imagej.net/content/groups/public</url> -->
-	<!-- 	</repository> -->
-	<!-- </repositories> -->
+	<repositories>
+		<repository>
+			<id>imagej.public</id>
+			<url>http://maven.imagej.net/content/groups/public</url>
+		</repository>
+	</repositories>
 
 	<build>
 		<plugins>
@@ -109,13 +133,15 @@
 		<!-- SCIFIO dependencies -->
 		<dependency>
 			<groupId>io.scif</groupId>
-			<artifactId>scifio-jai-imageio</artifactId>
+			<artifactId>scifio</artifactId>
+			<version>0.33.0</version>
 		</dependency>
 				<!-- Test scope dependencies -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<scope>test</scope>
+			<version>4.11</version>
+			<!-- <scope>test</scope> -->
 		</dependency>
 	</dependencies>
 
