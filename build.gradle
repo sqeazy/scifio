@@ -22,6 +22,7 @@ dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:23.0'
     implementation 'net.imagej:pom-imagej:17.0.0'
+    //implementation 'edu.ucar:udunits:4.3.18'//not publically available
     implementation 'edu.ucar:udunits:4.5.5'
 
     // Use JUnit test framework

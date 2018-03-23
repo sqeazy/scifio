@@ -46,11 +46,13 @@ import org.junit.Test;
  * @author Stefan Helfrich
  * @author Curtis Rueden
  */
+//@RunWith(JUnit4.class)
 public class TIFFFormatTest {
 
 	/**
 	 * Tests if TIFFs without metadata in the header are read sensibly.
 	 */
+
 	@Test
 	public void testTiffWithoutMetadata() {
 		final URL tiffWithoutMetadata = getClass().getResource("tiny-10x10x3.tif");
