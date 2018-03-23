@@ -12,7 +12,7 @@
 	<groupId>de.mpicbg</groupId>
 	<artifactId>pom-sqeazy-scifio</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
-	<packaging>pom</packaging>
+	<packaging>jar</packaging>
 	
 	<developers>
 		<developer>
@@ -65,7 +65,7 @@
 		<license.licenseName>lgpl_3</license.licenseName>
 		<license.copyrightOwners>Peter Steinbach, MPI CBG</license.copyrightOwners>
 		<!--<imagej.app.directory>C:/Programs/EasyScopyFiji.app/</imagej.app.directory>-->
-		<imagej.app.directory>/home/steinbac/software/fiji/bundled/</imagej.app.directory>
+		<!-- <imagej.app.directory>/home/steinbac/software/fiji/bundled/</imagej.app.directory> -->
 	</properties>
 
 	<!-- <modules> -->
