@@ -63,6 +63,8 @@ public class TIFFFormatTest {
 		assertEquals(10, img.dimension(1));
 		assertEquals(3, img.dimension(2));
 		assertEquals(Axes.UNKNOWN_LABEL, img.axis(2).type().getLabel());
+		//assertEquals(1+2, 3);
+
 	}
 
 }
