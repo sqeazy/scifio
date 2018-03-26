@@ -271,6 +271,45 @@ public class SqeazyFormat extends AbstractFormat {
 
     }
 
+
+    public static class Checker extends AbstractChecker {
+
+		// -- Checker API Methods --
+
+		@Override
+		public boolean suffixSufficient() {
+			return true;
+		}
+
+		@Override
+		public boolean isFormat(final RandomAccessInputStream stream)
+			throws IOException
+		{
+			final int blockLen = 8192;
+			if (!FormatTools.validStream(stream, blockLen, false)) return false;
+			final String data = stream.readString(blockLen);
+			// final List<String> lines = Arrays.asList(data.split("\n"));
+			Metadata meta = null;
+			try {
+				meta = (Metadata) getFormat().createMetadata();
+			}
+			catch (final FormatException e) {
+				log().error("Failed to create SqeazyMetadata", e);
+				return false;
+			}
+			// meta.createImageMetadata(1);
+			// meta.setRow(0);
+
+			// final String[] line = TextUtils.getNextLine(lines, meta);
+			// if (line == null) return false;
+			// int headerRows = 0;
+			// try {
+			// 	headerRows = TextUtils.parseFileHeader(lines, meta, log());
+			// }
+			// catch (final FormatException e) {}
+			return false;
+		}
+	}
 //     // The Parser is your interface with the image source.
 //     // It has one purpose: to take the raw image information and generate a
 //     // Metadata instance, populating all format-specific fields.
