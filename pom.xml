@@ -10,7 +10,7 @@
 	</parent>
 
 	<groupId>de.mpicbg</groupId>
-	<artifactId>pom-sqeazy-scifio</artifactId>
+	<artifactId>sqeazy-scifio</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	
