@@ -28,6 +28,7 @@ import java.util.List;
 import net.imagej.axis.Axes;
 import org.bridj.Pointer;
 import org.bridj.CLong;
+import org.bridj.Int;
 import static org.bridj.Pointer.*;
 
 import sqeazy.bindings.SqeazyLibrary;
@@ -295,18 +296,23 @@ public class SqeazyFormat extends AbstractFormat {
 			final String data = stream.readString(blockLen);
 			// final List<String> lines = Arrays.asList(data.split("\n"));
 
-            final Pointer<Byte> hdr = pointerToCString(data);
+            final Pointer<Byte> bHdr = pointerToCString(data);
             final Pointer<CLong> lLength = Pointer.allocateCLong();
-            SqeazyLibrary.SQY_Header_Size(hdr,lLength);
+            final Pointer<Int> iRValue = Pointer.allocateInt();
+            iRValue = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
 
-            Metadata meta = null;
-			try {
-				meta = (Metadata) getFormat().createMetadata();
-			}
-			catch (final FormatException e) {
-				log().error("Failed to create SqeazyMetadata", e);
-				return false;
-			}
+            if(iRValue == 0)
+                return true;
+
+            // Metadata meta = null;
+			// try {
+			// 	meta = (Metadata) getFormat().createMetadata();
+			// }
+			// catch (final FormatException e) {
+			// 	log().error("Failed to create SqeazyMetadata", e);
+			// 	return false;
+			// }
+
 			// meta.createImageMetadata(1);
 			// meta.setRow(0);
 
