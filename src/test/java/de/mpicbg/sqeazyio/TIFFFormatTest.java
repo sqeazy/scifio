@@ -27,7 +27,9 @@
  * #L%
  */
 
-package io.scif.formats;
+//package io.scif.formats;
+
+package de.mpicbg.sqeazyio;
 
 import static org.junit.Assert.*;
 

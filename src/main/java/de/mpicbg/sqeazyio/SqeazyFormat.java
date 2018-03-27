@@ -1,4 +1,4 @@
-package de.mpicbg.sqeazy;
+package de.mpicbg.sqeazyio;
 
 import io.scif.AbstractChecker;
 import io.scif.AbstractFormat;
@@ -28,7 +28,7 @@ import java.util.List;
 import net.imagej.axis.Axes;
 import org.bridj.Pointer;
 import org.bridj.CLong;
-import org.bridj.Int;
+
 import static org.bridj.Pointer.*;
 
 import sqeazy.bindings.SqeazyLibrary;
@@ -291,29 +291,30 @@ public class SqeazyFormat extends AbstractFormat {
 		public boolean isFormat(final RandomAccessInputStream stream)
 			throws IOException
 		{
-			final int blockLen = 8192;
+			final int blockLen = 16 << 10;
 			if (!FormatTools.validStream(stream, blockLen, false)) return false;
 			final String data = stream.readString(blockLen);
 			// final List<String> lines = Arrays.asList(data.split("\n"));
 
             final Pointer<Byte> bHdr = pointerToCString(data);
-            final Pointer<CLong> lLength = Pointer.allocateCLong();
-            final Pointer<Int> iRValue = Pointer.allocateInt();
-            iRValue = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
+            final Pointer<CLong> lLength = Pointer.allocateCLong().setLong(0);
+            final int iRValue = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
 
-            if(iRValue == 0)
+            System.out.println("\n>> SqeazyLibrary.SQY_Header_Size called, detected size "+lLength.getInt()+", return value "+iRValue+"\n");
+
+            if(lLength.getInt() != 0)
                 return true;
 
-            // Metadata meta = null;
-			// try {
-			// 	meta = (Metadata) getFormat().createMetadata();
-			// }
-			// catch (final FormatException e) {
-			// 	log().error("Failed to create SqeazyMetadata", e);
-			// 	return false;
-			// }
+            Metadata meta = null;
+			try {
+				meta = (Metadata) getFormat().createMetadata();
+			}
+			catch (final FormatException e) {
+				log().error("Failed to create SqeazyMetadata", e);
+				return false;
+			}
 
-			// meta.createImageMetadata(1);
+			meta.createImageMetadata(1);
 			// meta.setRow(0);
 
 			// final String[] line = TextUtils.getNextLine(lines, meta);
