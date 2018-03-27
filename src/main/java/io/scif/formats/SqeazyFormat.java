@@ -26,6 +26,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import net.imagej.axis.Axes;
+import org.bridj.Pointer;
+import org.bridj.CLong;
+import static org.bridj.Pointer.*;
+
+import sqeazy.bindings.SqeazyLibrary;
 
 import org.scijava.plugin.Plugin;
 
@@ -289,7 +294,12 @@ public class SqeazyFormat extends AbstractFormat {
 			if (!FormatTools.validStream(stream, blockLen, false)) return false;
 			final String data = stream.readString(blockLen);
 			// final List<String> lines = Arrays.asList(data.split("\n"));
-			Metadata meta = null;
+
+            final Pointer<Byte> hdr = pointerToCString(data);
+            final Pointer<CLong> lLength = Pointer.allocateCLong();
+            SqeazyLibrary.SQY_Header_Size(hdr,lLength);
+
+            Metadata meta = null;
 			try {
 				meta = (Metadata) getFormat().createMetadata();
 			}
