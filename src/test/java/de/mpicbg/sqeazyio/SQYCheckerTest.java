@@ -54,11 +54,11 @@ public class SQYCheckerTest {
 
     @Test public void testPipelineContained() throws IOException {
 
-        final URL tiny = getClass().getResource("tiny-10x10x3.sqy");
+        final URL tiny = getClass().getResource("flybrain.sqy");
         assertNotEquals(tiny,null);
 
         final String fpath = tiny.getPath();
-        assertThat(fpath, containsString("de/mpicbg/sqeazyio/tiny-10x10x3.sqy"));
+        assertThat(fpath, containsString("de/mpicbg/sqeazyio/flybrain.sqy"));
 
         final RandomAccessInputStream stream = new RandomAccessInputStream(context, fpath);
         final int blockLen = 16 << 10;
@@ -71,11 +71,11 @@ public class SQYCheckerTest {
 
     @Test public void testHeaderCall() throws IOException {
 
-        final URL tiny = getClass().getResource("tiny-10x10x3.sqy");
+        final URL tiny = getClass().getResource("flybrain.sqy");
         assertNotEquals(tiny,null);
 
         final String fpath = tiny.getPath();
-        assertThat(fpath, containsString("de/mpicbg/sqeazyio/tiny-10x10x3.sqy"));
+        assertThat(fpath, containsString("de/mpicbg/sqeazyio/flybrain.sqy"));
 
         final RandomAccessInputStream stream = new RandomAccessInputStream(context, fpath);
         final int blockLen = 16 << 10;
@@ -93,11 +93,11 @@ public class SQYCheckerTest {
 
     @Test public void testRecognizesFormat() throws IOException {
 
-        final URL tiny = getClass().getResource("tiny-10x10x3.sqy");
+        final URL tiny = getClass().getResource("flybrain.sqy");
         assertNotEquals(tiny,null);
 
         final String fpath = tiny.getPath();
-        assertThat(fpath, containsString("de/mpicbg/sqeazyio/tiny-10x10x3.sqy"));
+        assertThat(fpath, containsString("de/mpicbg/sqeazyio/flybrain.sqy"));
 
         final RandomAccessInputStream file_stream = new RandomAccessInputStream(context, fpath);
 
