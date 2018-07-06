@@ -79,16 +79,18 @@ public class SQYCheckerTest {
 
         final RandomAccessInputStream stream = new RandomAccessInputStream(context, fpath);
         final int blockLen = 16 << 10;
-        //if (!FormatTools.validStream(stream, blockLen, false)) return false;
+
         final String data = stream.readString(blockLen);
         assertThat(data, containsString("pipename"));
         assertThat(data, containsString("rank"));
 
         final Pointer<Byte> bHdr = pointerToCString(data);
-        final Pointer<CLong> lLength = Pointer.allocateCLong().setLong(0);
+        final Pointer<CLong> lLength = Pointer.allocateCLong().setLong(data.length());
         final int iRValue = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
 
         assertEquals(iRValue,0);
+        assertNotEquals(lLength.getInt(),0);
+        assertNotEquals(lLength.getInt(),data.length());
     }
 
     @Test public void testRecognizesFormat() throws IOException {

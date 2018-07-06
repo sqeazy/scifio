@@ -294,16 +294,20 @@ public class SqeazyFormat extends AbstractFormat {
 			final int blockLen = 16 << 10;
 			if (!FormatTools.validStream(stream, blockLen, false)) return false;
 			final String data = stream.readString(blockLen);
-			// final List<String> lines = Arrays.asList(data.split("\n"));
 
             final Pointer<Byte> bHdr = pointerToCString(data);
-            final Pointer<CLong> lLength = Pointer.allocateCLong().setLong(0);
+            final Pointer<CLong> lLength = Pointer.allocateCLong().setLong(data.length());
             final int iRValue = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
 
-            System.out.println("\n>> SqeazyLibrary.SQY_Header_Size called, detected size "+lLength.getInt()+", return value "+iRValue+"\n");
-
-            if(lLength.getInt() != 0)
+            if(lLength.getInt() != 0){
                 return true;
+            }
+
+            System.out.println("[SqeazyFormat.java] SqeazyLibrary.SQY_Header_Size called");
+            System.out.println("detected size "+lLength.getInt()+", return value "+iRValue+"\n");
+            System.out.println(data.substring(0,50)+"\n");
+//            return false;
+
 
             Metadata meta = null;
 			try {
