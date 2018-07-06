@@ -46,8 +46,8 @@ public class SQYMetadataTest {
 + "    \"bytes\": \"1072574\"   \n"
 + "},                       \n"
 + "\"sqy\": {                 \n"
-+ "    \"version\": \"0.5.2\",  \n"
-+ "    \"headref\": \"35dc9a6\" \n"
++ "    \"version\": \"0.6.1\",  \n"
++ "    \"headref\": \"b890998\" \n"
 + "}                        \n";
 
         Metadata md = new Metadata();
