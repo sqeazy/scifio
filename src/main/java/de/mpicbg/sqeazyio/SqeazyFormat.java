@@ -141,32 +141,30 @@ public class SqeazyFormat extends AbstractFormat {
 		private byte[] data;
         //private float[][] data;
 
-		/** Current row number. */
-		private int row;
+		// /** Current row number. */
+		// private int row;
 
-		/** Number of tokens per row. */
-		private int rowLength;
+		// /** Number of tokens per row. */
+		// private int rowLength;
 
-		/** Column index for X coordinate. */
-		private int xIndex = -1;
+		// /** Column index for X coordinate. */
+		// private int xIndex = -1;
 
-		/** Column index for Y coordinate. */
-		private int yIndex = -1;
+		// /** Column index for Y coordinate. */
+		// private int yIndex = -1;
 
-		/** List of channel labels. */
-		private String[] channels;
 
 		/** Image width. */
         @Field(label = "width")
-		private int sizeX;
+		private int sizeX = 0;
 
 		/** Image height. */
 		@Field(label = "heigth")
-		private int sizeY;
+		private int sizeY = 0;
 
         /** Image width. */
 		@Field(label = "depth")
-		private int sizeZ;
+		private int sizeZ = 0;
 
 		// -- TextMetadata getters and setters --
 
@@ -179,45 +177,45 @@ public class SqeazyFormat extends AbstractFormat {
 
 		}
 
-		public int getRow() {
-			return row;
-		}
+		// public int getRow() {
+		// 	return row;
+		// }
 
-		public void setRow(final int row) {
-			this.row = row;
-		}
+		// public void setRow(final int row) {
+		// 	this.row = row;
+		// }
 
-		public int getRowLength() {
-			return rowLength;
-		}
+		// public int getRowLength() {
+		// 	return rowLength;
+		// }
 
-		public void setRowLength(final int rowLength) {
-			this.rowLength = rowLength;
-		}
+		// public void setRowLength(final int rowLength) {
+		// 	this.rowLength = rowLength;
+		// }
 
-		public int getxIndex() {
-			return xIndex;
-		}
+		// public int getxIndex() {
+		// 	return xIndex;
+		// }
 
-		public void setxIndex(final int xIndex) {
-			this.xIndex = xIndex;
-		}
+		// public void setxIndex(final int xIndex) {
+		// 	this.xIndex = xIndex;
+		// }
 
-		public int getyIndex() {
-			return yIndex;
-		}
+		// public int getyIndex() {
+		// 	return yIndex;
+		// }
 
-		public void setyIndex(final int yIndex) {
-			this.yIndex = yIndex;
-		}
+		// public void setyIndex(final int yIndex) {
+		// 	this.yIndex = yIndex;
+		// }
 
-		public String[] getChannels() {
-			return channels;
-		}
+		// public String[] getChannels() {
+		// 	return channels;
+		// }
 
-		public void setChannels(final String[] channels) {
-			this.channels = channels;
-		}
+		// public void setChannels(final String[] channels) {
+		// 	this.channels = channels;
+		// }
 
 		public int getSizeX() {
 			return sizeX;
@@ -266,11 +264,11 @@ public class SqeazyFormat extends AbstractFormat {
 			super.close(fileOnly);
 			if (!fileOnly) {
 				data = null;
-				rowLength = 0;
-				xIndex = yIndex = -1;
-				channels = null;
+				// rowLength = 0;
+				// xIndex = yIndex = -1;
+				// channels = null;
 				sizeX = sizeY = sizeZ = 0;
-				row = 0;
+				// row = 0;
 			}
 		}
 
@@ -299,70 +297,111 @@ public class SqeazyFormat extends AbstractFormat {
             final Pointer<CLong> lLength = Pointer.allocateCLong().setLong(data.length());
             final int iRValue = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
 
-            if(lLength.getInt() != 0){
+            if(lLength.getInt() != 0 && iRValue == 0){
                 return true;
+            } else {
+                System.out.println("[SqeazyFormat.java] SqeazyLibrary.SQY_Header_Size called");
+                System.out.println("detected size "+lLength.getInt()+", return value "+iRValue+"\n");
+                System.out.println(data.substring(0,50)+"\n");
             }
 
-            System.out.println("[SqeazyFormat.java] SqeazyLibrary.SQY_Header_Size called");
-            System.out.println("detected size "+lLength.getInt()+", return value "+iRValue+"\n");
-            System.out.println(data.substring(0,50)+"\n");
-//            return false;
-
-
-            Metadata meta = null;
-			try {
-				meta = (Metadata) getFormat().createMetadata();
-			}
-			catch (final FormatException e) {
-				log().error("Failed to create SqeazyMetadata", e);
-				return false;
-			}
-
-			meta.createImageMetadata(1);
-			// meta.setRow(0);
-
-			// final String[] line = TextUtils.getNextLine(lines, meta);
-			// if (line == null) return false;
-			// int headerRows = 0;
-			// try {
-			// 	headerRows = TextUtils.parseFileHeader(lines, meta, log());
-			// }
-			// catch (final FormatException e) {}
 			return false;
 		}
 	}
-//     // The Parser is your interface with the image source.
-//     // It has one purpose: to take the raw image information and generate a
-//     // Metadata instance, populating all format-specific fields.
-//     public static class Parser extends AbstractParser<Metadata> {
+    // The Parser is your interface with the image source.
+    // It has one purpose: to take the raw image information and generate a
+    // Metadata instance, populating all format-specific fields.
+    public static class Parser extends AbstractParser<Metadata> {
 
-//         // In this method we populate the given Metadata object
-//         @Override
-//         public void typedParse(final RandomAccessInputStream stream,
-//                                final Metadata meta, final SCIFIOConfig config) throws IOException,
-//             FormatException
-// 			{
-// 				meta.setColor("blue");
 
-// 				// The provided SCIFIOConfig object has a number of configuration
-// 				// options we may want to read at this point.
-// 				// Any SCIFIOConfig#parser[XXXX] method is intended for this stage.
+        // In this method we populate the given Metadata object
+        @Override
+        public void typedParse(final RandomAccessInputStream stream,
+                               final Metadata meta,
+                               final SCIFIOConfig config) throws IOException, FormatException
+			{
+                meta.createImageMetadata(1);
+                final ImageMetadata iMeta = meta.get(0);
 
-// 				// If the MetadataLevel is MINIMUM, you only need to populate the
-// 				// minimum needed for generating ImageMetadata - extra "fluff" can
-// 				// be skipped. Note that this is more of a performance option - if
-// 				// ignored your format should still work, it just may be slower than
-// 				// optimal in some circumstances.
-// 				config.parserGetLevel();
+                // HEADER
+                // read file partially into memory to extract header
+                log().info("Reading sqy file "+stream.getFileName());
+                if (!FormatTools.validStream(stream, 4 << 10 , false))
+                    return ;
+                final long bytes = stream.length();
 
-// 				// This is state flag that gets passed to the Metadata automatically.
-// 				config.parserIsFiltered();
+                log().info("Parsing file header");
+                stream.seek(0);
 
-// 				// If this flag is set, it signifies a desire to save the raw original
-// 				// metadata, beyond what is represented in this format's fields.
-// 				config.parserIsSaveOriginalMetadata();
-// 			}
-//     }
+                final String blob = stream.readString(4 << 10);//read 16MB
+
+                final Pointer<Byte> bHdr = pointerToCString(blob);
+                final Pointer<CLong> lLength = Pointer.allocateCLong().setCLong(4 << 10);
+                int sqy_status = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
+                if(lLength.getInt() == 0 && sqy_status != 0){
+                    log().error("unable to read sqeazy header");
+                    return;
+                }
+
+                final String header = blob.substring(0,(int)lLength.getCLong());//crop header string to just the header content
+// BULK
+
+                Pointer<Byte> bSQYHeader = pointerToCString(header);
+                final int sizeZ = 0;
+                final int sizeC = 1;
+                final int sizeT = 1;
+
+                sqy_status = SqeazyLibrary.SQY_Decompressed_Sizeof(bSQYHeader,lLength);
+                if(sqy_status != 0){
+                    log().error("unable to read Sizeof pixel from sqeazy header");
+                    return;
+                }
+
+                if(lLength.getCLong() == 2){
+                    iMeta.setPixelType(FormatTools.UINT16);
+                }
+                else{
+                    iMeta.setPixelType(FormatTools.UINT8);
+                }
+
+                iMeta.setLittleEndian(false);
+
+                lLength.setCLong((long)header.length());
+                sqy_status = SqeazyLibrary.SQY_Decompressed_NDims(bSQYHeader,lLength);
+                if(sqy_status != 0){
+                    log().error("unable to read NDims of volume from sqeazy header");
+                    return;
+                }
+
+                final int ndims = (int)lLength.getCLong();
+                iMeta.setPlanarAxisCount(ndims);
+
+                final Pointer<CLong> lShape = Pointer.allocateCLongs(lLength.getCLong());
+                lShape.setCLongAtIndex(0,(long)header.length());
+
+                sqy_status = SqeazyLibrary.SQY_Decompressed_Shape(bSQYHeader,lShape);
+                if(sqy_status != 0){
+                    log().error("unable to read Shape of volume from sqeazy header");
+                    return;
+                }
+
+                log().info("parsed shape: "+lShape.getCLongAtIndex(0)+" "+lShape.getCLongAtIndex(1)+" "+lShape.getCLongAtIndex(2));
+                iMeta.setAxisLength(Axes.X, lShape.getCLongAtIndex(ndims-1));
+                meta.setSizeX((int)lShape.getCLongAtIndex(ndims-1));
+
+                iMeta.setAxisLength(Axes.Y, lShape.getCLongAtIndex(ndims-2));
+                meta.setSizeY((int)lShape.getCLongAtIndex(ndims-2));
+
+                if(iMeta.getPlanarAxisCount() == 3){
+                    iMeta.setAxisLength(Axes.Z, lShape.getCLongAtIndex(ndims-3));
+                    meta.setSizeZ((int)lShape.getCLongAtIndex(ndims-3));
+                }
+                iMeta.setAxisLength(Axes.CHANNEL, 1);
+                iMeta.setAxisLength(Axes.TIME, 1);
+
+
+			}
+    }
 
 //     // The purpose of the Checker is to determine if an image source is
 //     // compatible with this Format.
