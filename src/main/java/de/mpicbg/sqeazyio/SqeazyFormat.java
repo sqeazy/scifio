@@ -403,48 +403,6 @@ public class SqeazyFormat extends AbstractFormat {
 			}
     }
 
-//     // The purpose of the Checker is to determine if an image source is
-//     // compatible with this Format.
-//     // If you just want to use basic extension checking to determine
-//     // compatibility, you do not need to implement any methods in this class -
-//     // it's already handled for you in the Abstract layer.
-//     //
-//     // However, if your format embeds an identifying flag - e.g. a magic string
-//     // or number - then it should override suffixSufficient, suffixNecessary
-//     // and isFormat(RandomAccessInputStream) as appropriate.
-//     public static class Checker extends AbstractChecker {
-
-//         // By default, this method returns true, indicating that extension match
-//         // alone is sufficient to determine compatibility. If this method returns
-//         // false, then the isFormat(RandomAccessInputStream) method will need to
-//         // be checked.
-// //			@Override
-// //			public boolean suffixSufficient() {
-// //				return false;
-// //			}
-
-//         // If suffixSufficient returns true, this method has no meaning. Otherwise
-//         // if this method returns true (the default) then the extension will have
-//         // to match in addition to the result of isFormat(RandomAccessInputStream)
-//         // If this returns false, then isFormat(RandomAccessInputStream) is solely
-//         // responsible for determining compatibility.
-// //			@Override
-// //			public boolean suffixNecessary() {
-// //				return false;
-// //			}
-
-//         // By default, this method returns false and is not considered during
-//         // extension checking. If your format uses a magic string, etc... then
-//         // you should override this method and check for the string or value as
-//         // appropriate.
-// //			@Override
-// //			public boolean isFormat(final RandomAccessInputStream stream)
-// //				throws IOException
-// //			{
-// //				return stream.readBoolean() == true;
-// //			}
-//     }
-
 //     // The Reader component uses parsed Metadata to determine how to extract
 //     // pixel data from an image source.
 //     // In the core SCIFIO library, image planes can be returned as byte[] or
