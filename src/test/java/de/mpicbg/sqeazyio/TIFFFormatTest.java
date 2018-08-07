@@ -36,6 +36,8 @@ import static org.junit.Assert.*;
 import io.scif.img.IO;
 
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
@@ -56,7 +58,9 @@ public class TIFFFormatTest {
 	@Test
 	public void testTiffWithoutMetadata() {
 		final URL tiffWithoutMetadata = getClass().getResource("tiny-10x10x3.tif");
-		final ImgPlus<?> img = IO.openImgs(tiffWithoutMetadata.getPath()).get(0);
+		final Path fnio = Paths.get(tiffWithoutMetadata.getPath());
+
+		final ImgPlus<?> img = IO.openImgs(fnio.toAbsolutePath().toString()).get(0);
 
 		assertEquals(3, img.numDimensions());
 		assertEquals(10, img.dimension(0));
