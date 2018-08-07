@@ -68,17 +68,17 @@ public class SQYFormatTest {
     }
 
     @Test
-	public void testOpenPlane() throws Exception {
+	public void testOpenPlane_UI8() throws Exception {
 		// SETUP
-        final URL tiny = getClass().getResource("flybrain.sqy");
-        assertNotEquals(tiny,null);
+        final URL flybrain = getClass().getResource("flybrain.sqy");
+        assertNotEquals(flybrain,null);
 
-        final String fpath = tiny.getPath();
+        final String fpath = flybrain.getPath();
         assertThat(fpath, containsString("de/mpicbg/sqeazyio/flybrain.sqy"));
 
-        final short width = 256;
-		final short height = 256;
-		final int planeBytes = width * height * 2;
+        final int width = 256;
+		final int height = 256;
+		final int planeBytes = width * height;
 
 		final Interval bounds = new FinalInterval(width, height);
 		final ByteArrayPlane plane = new ByteArrayPlane(context);
@@ -97,7 +97,72 @@ public class SQYFormatTest {
                          new SCIFIOConfig());
 
 		// VERIFY
-		assertNotEquals(plane.getData()[0],42);
+        //first plane is all zeros
+        ByteBuffer read_plane = ByteBuffer.wrap(plane.getData());
+		assertNotEquals(read_plane.get(0),(byte)42);
+        assertEquals(read_plane.get(0),(byte)0);
+        assertEquals(read_plane.get((width*height) - 1),(byte)0);
+
+        //try to extract plane 24
+        plane.setData(new byte[planeBytes]);
+        Arrays.fill(plane.getData(), 0, planeBytes, (byte) 42);
+        reader.openPlane(0, (long)24, plane, // bounds,
+                         new SCIFIOConfig());
+
+        read_plane = ByteBuffer.wrap(plane.getData());
+        assertNotEquals(read_plane.get(0),(byte)42);
+        assertEquals(read_plane.get(0),(byte)0);
+
+        //intensity(z=24, y=3, x=107) == 79
+        assertEquals(plane.getData()[3*width + 107],(byte)79);
+        assertEquals(read_plane.get(3*width + 107),(byte)79);
+
+        //intensity(z=24, y=16, x=112) == 121
+        assertEquals(plane.getData()[16*width + 112],(byte)121);
+        assertEquals(read_plane.get(16*width + 112),(byte)121);
+
+        //intensity(z=24, y=232, x=188) == 152
+
+
+	}
+
+    @Test
+	public void testOpenPlane_UI16() throws Exception {
+		// SETUP
+        final URL tiny = getClass().getResource("tiny-10x10x3.sqy");
+        assertNotEquals(tiny,null);
+
+        final String fpath = tiny.getPath();
+        assertThat(fpath, containsString("de/mpicbg/sqeazyio/tiny-10x10x3.sqy"));
+
+        final int width = 10;
+		final int height = 10;
+		final int planeBytes = width * height * 2;
+
+		final Interval bounds = new FinalInterval(width, height);
+		final ByteArrayPlane plane = new ByteArrayPlane(context);
+		plane.setData(new byte[planeBytes]);
+        Arrays.fill(plane.getData(), 0, planeBytes, (byte) 16);
+
+		final RandomAccessInputStream stream = new RandomAccessInputStream(context,fpath);
+		final Reader reader = (Reader) format.createReader();
+
+        assertNotEquals(stream, null);
+		assertNotEquals(reader, null);
+		reader.setSource(stream);
+
+		// EXECUTE
+		reader.openPlane(0, (long)0, plane, // bounds,
+                         new SCIFIOConfig());
+
+		// VERIFY
+        ByteBuffer read_plane = ByteBuffer.wrap(plane.getData());
+		assertNotEquals((short)42,read_plane.getShort(0));
+        assertEquals((short)112, read_plane.getShort((width*height) - 1));
+        assertEquals((short)128, read_plane.getShort(0));
+
+
+
 	}
 
 }

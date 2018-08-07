@@ -302,14 +302,20 @@ public class SqeazyFormat extends AbstractFormat {
                 // HEADER
                 // read file partially into memory to extract header
                 log().info("Reading sqy file "+stream.getFileName());
-                if (!FormatTools.validStream(stream, 4 << 10 , false))
+                int hdr_size = 4 << 10;
+                if(stream.length() < hdr_size)
+                    hdr_size = (int)stream.length();
+
+                if (!FormatTools.validStream(stream, hdr_size , false)){
+                    log().error("unable to read sqeazy header of size "+hdr_size);
                     return ;
+                }
                 final long bytes = stream.length();
 
                 log().info("Parsing file header");
                 final ByteBuffer blob = ByteBuffer.allocate(4 << 10);
                 stream.seek(0);
-                stream.read(blob, 0, 4 << 10);//read 4MB
+                stream.read(blob, 0, hdr_size);//read 4MB
 
                 final Pointer<Byte> bHdr = pointerToBytes(blob);
                 final Pointer<CLong> lLength = Pointer.allocateCLong().setCLong(4 << 10);
@@ -454,15 +460,16 @@ public class SqeazyFormat extends AbstractFormat {
                 //                                  planeIndex,
                 //                                  bytes.length,
                 //                                  bounds);
-                final int xAxis = meta.get(imageIndex).getAxisIndex(Axes.X);
-                final int yAxis = meta.get(imageIndex).getAxisIndex(Axes.Y);
-                final int //x = (int) planeMin[0], y = (int) planeMin[1], //
-					w = meta.getSizeX(), h = meta.getSizeY(), size = w*h;
-                final long planeEnd = (long)(planeIndex+size);
+                // final int xAxis = meta.get(imageIndex).getAxisIndex(Axes.X);
+                // final int yAxis = meta.get(imageIndex).getAxisIndex(Axes.Y);
+                final int w = meta.getSizeX(), h = meta.getSizeY(), size = w*h;
+
+                final long planeOffset = planeIndex*w*h;
+                final long planeEnd = (long)(planeOffset+size);
                 // copy floating point data into byte buffer
 
-                for (long i = planeIndex; i < planeEnd; i++) {
-                    bytes[(int)(i - planeIndex)] = meta.getData()[(int)i];
+                for (long i = planeOffset; i < planeEnd; i++) {
+                    bytes[(int)(i - planeOffset)] = meta.getData()[(int)i];
                 }
 
 				return plane;
