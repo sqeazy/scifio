@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>19.2.0</version>
+		<version>22.3.0</version>
 		<!-- <type>pom</type> -->
 	</parent>
 
@@ -139,7 +139,7 @@
 		<dependency>
 			<groupId>io.scif</groupId>
 			<artifactId>scifio</artifactId>
-			<version>0.33.0</version>
+			<version>0.37.0</version>
 		</dependency>
 				<!-- Test scope dependencies -->
 		<dependency>
