@@ -24,8 +24,11 @@ import io.scif.services.FormatService;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.nio.ByteBuffer;
 
 import net.imagej.axis.Axes;
+import net.imglib2.Interval;
+
 import org.bridj.Pointer;
 import org.bridj.CLong;
 
@@ -34,6 +37,7 @@ import static org.bridj.Pointer.*;
 import sqeazy.bindings.SqeazyLibrary;
 
 import org.scijava.plugin.Plugin;
+import org.scijava.util.Bytes;
 
 /**
  * The {@link Format} class itself has three purposes:
@@ -67,7 +71,7 @@ import org.scijava.plugin.Plugin;
  */
 // NB: The Plugin annotation here allows the format to be discovered
 // automatically - satisfying the first role of the Format
-@Plugin(type = Format.class)
+@Plugin(type = Format.class, name = "Sqeazy")
 public class SqeazyFormat extends AbstractFormat {
 
     // *** FORMAT API ***
@@ -134,12 +138,11 @@ public class SqeazyFormat extends AbstractFormat {
             return pipeline;
         }
 
-        		/**
-		 * Because we have no way of indexing into the text file efficiently in
+        /**
+		 * Because we have no way of indexing into the sqy file efficiently in
 		 * general, we cheat and store the entire file's data in a giant array.
 		 */
-		private byte[] data;
-        //private float[][] data;
+	    private byte[] bytes;
 
 		// /** Current row number. */
 		// private int row;
@@ -166,56 +169,29 @@ public class SqeazyFormat extends AbstractFormat {
 		@Field(label = "depth")
 		private int sizeZ = 0;
 
+        /** threads to use. */
+		@Field(label = "nthreads")
+		private int nThreads = 1;
+
+
 		// -- TextMetadata getters and setters --
 
 		public byte[] getData() {
-			return data;
+			return bytes;
 		}
 
 		public void setData(final byte[] data) {
-			this.data = data;
-
+			this.bytes = data;
 		}
 
-		// public int getRow() {
-		// 	return row;
-		// }
 
-		// public void setRow(final int row) {
-		// 	this.row = row;
-		// }
+		public int getNthreads() {
+			return nThreads;
+		}
 
-		// public int getRowLength() {
-		// 	return rowLength;
-		// }
-
-		// public void setRowLength(final int rowLength) {
-		// 	this.rowLength = rowLength;
-		// }
-
-		// public int getxIndex() {
-		// 	return xIndex;
-		// }
-
-		// public void setxIndex(final int xIndex) {
-		// 	this.xIndex = xIndex;
-		// }
-
-		// public int getyIndex() {
-		// 	return yIndex;
-		// }
-
-		// public void setyIndex(final int yIndex) {
-		// 	this.yIndex = yIndex;
-		// }
-
-		// public String[] getChannels() {
-		// 	return channels;
-		// }
-
-		// public void setChannels(final String[] channels) {
-		// 	this.channels = channels;
-		// }
+		public void setNthreads(final int nthreads) {
+			this.nThreads = nthreads;
+		}
 
 		public int getSizeX() {
 			return sizeX;
@@ -263,7 +239,7 @@ public class SqeazyFormat extends AbstractFormat {
 		public void close(final boolean fileOnly) throws IOException {
 			super.close(fileOnly);
 			if (!fileOnly) {
-				data = null;
+				bytes = null;
 				// rowLength = 0;
 				// xIndex = yIndex = -1;
 				// channels = null;
@@ -331,11 +307,11 @@ public class SqeazyFormat extends AbstractFormat {
                 final long bytes = stream.length();
 
                 log().info("Parsing file header");
+                final ByteBuffer blob = ByteBuffer.allocate(4 << 10);
                 stream.seek(0);
+                stream.read(blob, 0, 4 << 10);//read 4MB
 
-                final String blob = stream.readString(4 << 10);//read 16MB
-
-                final Pointer<Byte> bHdr = pointerToCString(blob);
+                final Pointer<Byte> bHdr = pointerToBytes(blob);
                 final Pointer<CLong> lLength = Pointer.allocateCLong().setCLong(4 << 10);
                 int sqy_status = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
                 if(lLength.getInt() == 0 && sqy_status != 0){
@@ -343,11 +319,12 @@ public class SqeazyFormat extends AbstractFormat {
                     return;
                 }
 
-                final String header = blob.substring(0,(int)lLength.getCLong());//crop header string to just the header content
-// BULK
+                final ByteBuffer header = ByteBuffer.allocate((int)lLength.getCLong());
+                stream.seek(0);
+                stream.read(header, 0, (int)lLength.getCLong());
 
-                Pointer<Byte> bSQYHeader = pointerToCString(header);
-                final int sizeZ = 0;
+                Pointer<Byte> bSQYHeader = pointerToBytes(header);
+                int sizeZ = 0;
                 final int sizeC = 1;
                 final int sizeT = 1;
 
@@ -356,8 +333,8 @@ public class SqeazyFormat extends AbstractFormat {
                     log().error("unable to read Sizeof pixel from sqeazy header");
                     return;
                 }
-
-                if(lLength.getCLong() == 2){
+                final int sizeof = (int)lLength.getCLong();
+                if(sizeof == 2){
                     iMeta.setPixelType(FormatTools.UINT16);
                 }
                 else{
@@ -366,7 +343,7 @@ public class SqeazyFormat extends AbstractFormat {
 
                 iMeta.setLittleEndian(false);
 
-                lLength.setCLong((long)header.length());
+                lLength.setCLong((long)header.capacity());
                 sqy_status = SqeazyLibrary.SQY_Decompressed_NDims(bSQYHeader,lLength);
                 if(sqy_status != 0){
                     log().error("unable to read NDims of volume from sqeazy header");
@@ -377,7 +354,7 @@ public class SqeazyFormat extends AbstractFormat {
                 iMeta.setPlanarAxisCount(ndims);
 
                 final Pointer<CLong> lShape = Pointer.allocateCLongs(lLength.getCLong());
-                lShape.setCLongAtIndex(0,(long)header.length());
+                lShape.setCLongAtIndex(0,(long)header.capacity());
 
                 sqy_status = SqeazyLibrary.SQY_Decompressed_Shape(bSQYHeader,lShape);
                 if(sqy_status != 0){
@@ -385,7 +362,7 @@ public class SqeazyFormat extends AbstractFormat {
                     return;
                 }
 
-                log().info("parsed shape: "+lShape.getCLongAtIndex(0)+" "+lShape.getCLongAtIndex(1)+" "+lShape.getCLongAtIndex(2));
+                log().info("parsed shape: "+lShape.getCLongAtIndex(0)+" "+lShape.getCLongAtIndex(1)+" "+lShape.getCLongAtIndex(2)+" sizeof="+sizeof);
                 iMeta.setAxisLength(Axes.X, lShape.getCLongAtIndex(ndims-1));
                 meta.setSizeX((int)lShape.getCLongAtIndex(ndims-1));
 
@@ -395,68 +372,111 @@ public class SqeazyFormat extends AbstractFormat {
                 if(iMeta.getPlanarAxisCount() == 3){
                     iMeta.setAxisLength(Axes.Z, lShape.getCLongAtIndex(ndims-3));
                     meta.setSizeZ((int)lShape.getCLongAtIndex(ndims-3));
+                    sizeZ = (int)meta.getSizeZ();
                 }
                 iMeta.setAxisLength(Axes.CHANNEL, 1);
                 iMeta.setAxisLength(Axes.TIME, 1);
 
+                final int planeCount = sizeZ * sizeC * sizeT;
+                final int planeSize = (int) iMeta.getAxisLength(Axes.X) * (int) iMeta.getAxisLength(Axes.Y);
+                final long nbytes = planeCount*planeSize*sizeof;
+                final Pointer<Byte> lDecodedBytes = Pointer.allocateBytes(nbytes);
+                log().info("allocating ByteBuffer of "+nbytes+" Bytes");
 
+                stream.seek(0);
+                final ByteBuffer encoded = ByteBuffer.allocate((int)bytes);
+                stream.read(encoded);//read all
+
+                final Pointer<Byte> lCompressedBytes = pointerToBytes(encoded);
+                final Pointer<CLong> lCompresssedBufferLength = Pointer.allocateCLong().setCLong(bytes);
+
+                int return_code = -1;
+                if(sizeof == 1){
+                    log().info("Decompressing 8-bit volume");
+                    return_code = SqeazyLibrary.SQY_Decode_UI8(lCompressedBytes,
+                                                               bytes,//lCompresssedBufferLength,
+                                                 lDecodedBytes,
+                                                 meta.getNthreads());
+                }
+                else if(sizeof == 2){
+                    log().info("Decompressing 16-bit volume");
+                    return_code = SqeazyLibrary.SQY_Decode_UI16(lCompressedBytes,
+                                                                bytes,//lCompresssedBufferLength,
+                                                  lDecodedBytes,
+                                                  meta.getNthreads());
+
+                }
+                else{
+                    log().error("unable to decompress of unknown pixel size "+sizeof+" (only sizeof={1 or 2} supported)");
+                    return;
+                }
+
+                if(return_code == 0){
+                    log().info("Decompression successful");
+                }
+
+                meta.setData(lDecodedBytes.getBytes((int)nbytes));
 			}
     }
 
-//     // The Reader component uses parsed Metadata to determine how to extract
-//     // pixel data from an image source.
-//     // In the core SCIFIO library, image planes can be returned as byte[] or
-//     // BufferedImages, based on which Reader class is extended. Note that the
-//     // BufferedImageReader converts BufferedImages to byte[], so the
-//     // ByteArrayReader is typically faster and the default choice here. But
-//     // select the class that makes the most sense for your format.
-//     public static class Reader extends ByteArrayReader<Metadata> {
+    // The Reader component uses parsed Metadata to determine how to extract
+    // pixel data from an image source.
+    // In the core SCIFIO library, image planes can be returned as byte[] or
+    // BufferedImages, based on which Reader class is extended. Note that the
+    // BufferedImageReader converts BufferedImages to byte[], so the
+    // ByteArrayReader is typically faster and the default choice here. But
+    // select the class that makes the most sense for your format.
+    public static class Reader extends ByteArrayReader<Metadata> {
 
-//         // The purpose of this method is to populate the provided Plane object by
-//         // reading from the specified image and plane indices in the underlying
-//         // image source.
-//         // planeMin and planeMax are dimensional indices determining the requested
-//         // subregion offsets into the specified plane.
-//         @Override
-//         public ByteArrayPlane openPlane(int imageIndex, long planeIndex,
-//                                         ByteArrayPlane plane, long[] planeMin, long[] planeMax,
-//                                         SCIFIOConfig config) throws FormatException, IOException
-// 			{
-// 				// The attached metadata should give us everything we need to determine
-// 				// how the provided plane's pixels will be populated.
-// 				final Metadata meta = getMetadata();
+        // The purpose of this method is to populate the provided Plane object by
+        // reading from the specified image and plane indices in the underlying
+        // image source.
+        // planeMin and planeMax are dimensional indices determining the requested
+        // subregion offsets into the specified plane.
+        @Override
+        public ByteArrayPlane openPlane(final int imageIndex,
+                                        final long planeIndex,
+                                        final ByteArrayPlane plane,
+                                        final Interval bounds,// final long[] planeMin,
+                                        // final long[] planeMax,
+                                        final SCIFIOConfig config) throws FormatException, IOException
+			{
+				// The attached metadata should give us everything we need to determine
+				// how the provided plane's pixels will be populated.
+				final Metadata meta = getMetadata();
 
-// 				// For the Reader, there are currently no explicit SCIFIOConfig options.
-// 				// If there are K:V pairs of interest, they can be queried:
-// 				config.containsKey("key");
+                // update the data by reference. Ideally, this limits memory problems
+				// from rapid Java array construction/destruction.
+				final byte[] bytes = plane.getData();
+				//Arrays.fill(bytes, 0, bytes.length, (byte) 0);
+                // FormatTools.checkPlaneForReading(meta,
+                //                                  imageIndex,
+                //                                  planeIndex,
+                //                                  bytes.length,
+                //                                  bounds);
+                final int xAxis = meta.get(imageIndex).getAxisIndex(Axes.X);
+                final int yAxis = meta.get(imageIndex).getAxisIndex(Axes.Y);
+                final int //x = (int) planeMin[0], y = (int) planeMin[1], //
+					w = meta.getSizeX(), h = meta.getSizeY(), size = w*h;
+                final long planeEnd = (long)(planeIndex+size);
+                // copy floating point data into byte buffer
 
-// 				// update the data by reference. Ideally, this limits memory problems
-// 				// from rapid Java array construction/destruction.
-// 				final byte[] bytes = plane.getData();
-// 				Arrays.fill(bytes, 0, bytes.length, (byte) 0);
+                for (long i = planeIndex; i < planeEnd; i++) {
+                    bytes[(int)(i - planeIndex)] = meta.getData()[(int)i];
+                }
 
-// 				// If the attached Metadata has color tables, we should attach the
-// 				// appropriate table to the returned plane.
-// 				// NB: this functionality is planned to be moved to the AbstractReader
-// 				//     layer so that it always happens and this boilerplate will become
-// 				//     unnecessary.
-// 				if (meta.getClass().isAssignableFrom(HasColorTable.class)) {
-// 					plane.setColorTable(((HasColorTable) meta).getColorTable(imageIndex,
-//                                                                              planeIndex));
-// 				}
+				return plane;
+			}
 
-// 				return plane;
-// 			}
+        // You must declare what domains your reader is associated with, based
+        // on the list of constants in io.scif.util.FormatTools.
+        // It is also sufficient to return an empty array here.
+        @Override
+        protected String[] createDomainArray() {
+            return new String[] { FormatTools.UNKNOWN_DOMAIN };
+        }
 
-//         // You must declare what domains your reader is associated with, based
-//         // on the list of constants in io.scif.util.FormatTools.
-//         // It is also sufficient to return an empty array here.
-//         @Override
-//         protected String[] createDomainArray() {
-//             return new String[0];
-//         }
-
-//     }
+    }
 
 //     // *** OPTIONAL COMPONENTS ***
 
