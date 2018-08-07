@@ -11,6 +11,7 @@ import io.scif.FormatException;
 
 import java.net.URL;
 import java.io.IOException;
+import java.nio.file.*;
 
 import org.junit.Test;
 import org.junit.After;
@@ -38,15 +39,14 @@ public class SQYParserTest {
 
     private static final Context context = new Context();
 	private static final SqeazyFormat format = new SqeazyFormat();
-	//private static SqeazyFormat.Reader reader;
+	private static SqeazyFormat.Reader reader;
 	private static SqeazyFormat.Parser parser;
-	// private static final SqeazyFormat.Checker checker =
-	// 	new SqeazyFormat.Checker();
+	private static final SqeazyFormat.Checker checker = new SqeazyFormat.Checker();
 
     @BeforeClass
 	public static void oneTimeSetup() throws Exception {
 		format.setContext(context);
-		//reader = (SqeazyFormat.Reader) format.createReader();
+		reader = (SqeazyFormat.Reader) format.createReader();
 		parser = (SqeazyFormat.Parser) format.createParser();
 	}
 
@@ -65,7 +65,9 @@ public class SQYParserTest {
         assertNotEquals(tiny,null);
 
         final String fpath = tiny.getPath();
+        final Path fnio = Paths.get(fpath);
         assertThat(fpath, containsString("de/mpicbg/sqeazyio/flybrain.sqy"));
+        assertEquals(Files.isRegularFile(fnio), true);
 
         final SqeazyFormat.Metadata sqyMeta = new SqeazyFormat.Metadata();
         final RandomAccessInputStream stream = new RandomAccessInputStream(context, fpath);
@@ -75,6 +77,10 @@ public class SQYParserTest {
         assertThat(data, containsString("rank"));
         final SCIFIOConfig config = new SCIFIOConfig();
 
+        assertNotEquals(stream, null);
+		assertNotEquals(reader, null);
+
+        reader.setSource(stream);
         parser.typedParse(stream, sqyMeta, config);
 
 // VERIFY
