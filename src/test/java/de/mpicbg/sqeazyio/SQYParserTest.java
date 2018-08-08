@@ -12,6 +12,7 @@ import io.scif.FormatException;
 import java.net.URL;
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.ByteBuffer;
 
 import org.junit.Test;
 import org.junit.After;
@@ -58,7 +59,21 @@ public class SQYParserTest {
 		context.dispose();
 	}
 
-// /home/steinbac/software/scifio/src/test/java/io/scif/formats/KontronFormatTest.java
+    @Test public void testByteBufferOnUI16() throws FormatException {
+
+        final byte[] array = { (byte)0, (byte)100, (byte)1, (byte)0 };
+        assertEquals((byte)100, array[1]);
+
+        final ByteBuffer buf = ByteBuffer.wrap(array);
+        assertEquals(4, buf.capacity());
+
+        assertEquals(100, buf.getShort(0));
+        assertEquals(256, buf.asShortBuffer().get(1));
+        assertNotEquals(256, buf.getShort(1));
+
+    }
+
+
     @Test public void testCorrectWidthHeight() throws IOException, FormatException {
 
         final URL tiny = getClass().getResource("flybrain.sqy");
@@ -91,6 +106,62 @@ public class SQYParserTest {
         final ImageMetadata iMeta = sqyMeta.get(0);
 
         assertEquals(57, iMeta.getAxisLength(Axes.Z));
+
+    }
+
+        @Test public void testCorrectness_UI16() throws IOException, FormatException {
+
+        final URL tiny = getClass().getResource("droso.sqy");
+        assertNotEquals(tiny,null);
+
+        final String fpath = tiny.getPath();
+        final Path fnio = Paths.get(fpath);
+        assertThat(fpath, containsString("de/mpicbg/sqeazyio/droso.sqy"));
+        assertEquals(Files.isRegularFile(fnio), true);
+
+        final SqeazyFormat.Metadata sqyMeta = new SqeazyFormat.Metadata();
+        final RandomAccessInputStream stream = new RandomAccessInputStream(context, fpath);
+        int blockLen = 4 << 10;
+        if( stream.length() > blockLen ){
+            blockLen = (int)stream.length();
+        }
+        final String data = stream.readString(blockLen);
+        assertThat(data, containsString("pipename"));
+        assertThat(data, containsString("rank"));
+        final SCIFIOConfig config = new SCIFIOConfig();
+
+        assertNotEquals(stream, null);
+		assertNotEquals(reader, null);
+
+        reader.setSource(stream);
+        parser.typedParse(stream, sqyMeta, config);
+
+// VERIFY
+        assertEquals(64, sqyMeta.getSizeX());
+		assertEquals(64, sqyMeta.getSizeY());
+        assertEquals(81, sqyMeta.getSizeZ());
+
+        final ImageMetadata iMeta = sqyMeta.get(0);
+
+        assertEquals(81, iMeta.getAxisLength(Axes.Z));
+        final long nbytes_expected = sqyMeta.getSizeX()*sqyMeta.getSizeY()*sqyMeta.getSizeZ()*2;
+        assertEquals(sqyMeta.getData().getValidBytes(), nbytes_expected);
+
+        final ByteBuffer stack_buffer = sqyMeta.getData().getByteBuffer();
+        assertEquals(stack_buffer.capacity(), nbytes_expected);
+
+        assertEquals((short)100,sqyMeta.getData().getShortBuffer().get(0));
+        assertEquals((short)100,stack_buffer.asShortBuffer().get(0));
+        assertEquals((short)100,stack_buffer.getShort(0));
+
+        assertEquals((short)101,sqyMeta.getData().getShortBuffer().get(1));
+        assertEquals((short)101,stack_buffer.asShortBuffer().get(1));
+        assertNotEquals((short)101,stack_buffer.getShort(1));
+
+        assertEquals((short)96,sqyMeta.getData().getShortBuffer().get(2));
+        assertEquals((short)96,stack_buffer.asShortBuffer().get(2));
+        assertNotEquals((short)96,stack_buffer.getShort(2));
+
 
     }
 

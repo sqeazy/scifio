@@ -4,6 +4,8 @@
 package de.mpicbg.sqeazyio;
 
 import org.junit.Test;
+import java.nio.ByteBuffer;
+
 import static org.junit.Assert.*;
 
 import de.mpicbg.sqeazyio.SqeazyFormat.Metadata;
@@ -51,10 +53,10 @@ public class SQYMetadataTest {
 + "}                        \n";
 
         Metadata md = new Metadata();
-        md.setData(header.getBytes());
+        md.setBuffer(ByteBuffer.wrap(header.getBytes()));
         //TODO: doesn't work due to get(0) md.populateImageMetadata();
         //assertEquals(md.getType(),"h");
-        assertEquals(md.getData()[1],'p');
+        assertEquals(md.getData().getBytes()[1],'p');
     }
 
 }

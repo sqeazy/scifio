@@ -142,7 +142,8 @@ public class SqeazyFormat extends AbstractFormat {
 		 * Because we have no way of indexing into the sqy file efficiently in
 		 * general, we cheat and store the entire file's data in a giant array.
 		 */
-	    private byte[] bytes;
+	    //private ByteBuffer bytes;
+        private Pointer<Byte> ptr;
 
 		// /** Current row number. */
 		// private int row;
@@ -175,13 +176,21 @@ public class SqeazyFormat extends AbstractFormat {
 
 
 		// -- TextMetadata getters and setters --
-
-		public byte[] getData() {
-			return bytes;
+		public ByteBuffer getBuffer() {
+			return ptr.getByteBuffer();
 		}
 
-		public void setData(final byte[] data) {
-			this.bytes = data;
+        public void setBuffer(final ByteBuffer buf) {
+            this.ptr = pointerToBytes(buf);
+			return ;
+		}
+
+        public Pointer<Byte> getData() {
+			return ptr;
+		}
+
+		public void setData(final Pointer<Byte> data) {
+			this.ptr = data;
 		}
 
 
@@ -239,7 +248,7 @@ public class SqeazyFormat extends AbstractFormat {
 		public void close(final boolean fileOnly) throws IOException {
 			super.close(fileOnly);
 			if (!fileOnly) {
-				bytes = null;
+				ptr.release();// = null;
 				// rowLength = 0;
 				// xIndex = yIndex = -1;
 				// channels = null;
@@ -417,11 +426,13 @@ public class SqeazyFormat extends AbstractFormat {
                     return;
                 }
 
-                if(return_code == 0){
-                    log().info("Decompression successful");
-                }
+                meta.setData(lDecodedBytes);
 
-                meta.setData(lDecodedBytes.getBytes((int)nbytes));
+                if(return_code == 0){
+                    log().info("Decompression successful "+lDecodedBytes.getBytes()[0]+", "+lDecodedBytes.getBytes()[1] +", "+lDecodedBytes.getBytes()[2] +"; "
+                               + lDecodedBytes.getShorts()[0]+", "+lDecodedBytes.getShorts()[1]+", "+lDecodedBytes.getShorts()[2]);
+
+                }
 			}
     }
 
@@ -453,7 +464,7 @@ public class SqeazyFormat extends AbstractFormat {
 
                 // update the data by reference. Ideally, this limits memory problems
 				// from rapid Java array construction/destruction.
-				final byte[] bytes = plane.getData();
+				final byte[] bytes = plane.getBytes();
 				//Arrays.fill(bytes, 0, bytes.length, (byte) 0);
                 // FormatTools.checkPlaneForReading(meta,
                 //                                  imageIndex,
@@ -469,7 +480,7 @@ public class SqeazyFormat extends AbstractFormat {
                 // copy floating point data into byte buffer
 
                 for (long i = planeOffset; i < planeEnd; i++) {
-                    bytes[(int)(i - planeOffset)] = meta.getData()[(int)i];
+                    bytes[(int)(i - planeOffset)] = meta.getData().getByteBuffer().get((int)i);
                 }
 
 				return plane;
