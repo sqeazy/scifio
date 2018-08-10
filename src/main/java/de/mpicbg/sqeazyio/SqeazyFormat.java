@@ -261,12 +261,9 @@ public class SqeazyFormat extends AbstractFormat {
 		public void close(final boolean fileOnly) throws IOException {
 			super.close(fileOnly);
 			if (!fileOnly) {
-				ptr.release();// = null;
-				// rowLength = 0;
-				// xIndex = yIndex = -1;
-				// channels = null;
+				ptr.release();
 				sizeX = sizeY = sizeZ = 0;
-				// row = 0;
+				
 			}
 		}
 
@@ -292,7 +289,7 @@ public class SqeazyFormat extends AbstractFormat {
 			final String data = stream.readString(blockLen);
 
             final Pointer<Byte> bHdr = pointerToCString(data);
-            final Pointer<CLong> lLength = Pointer.allocateCLong().setLong(data.length());
+            final Pointer<CLong> lLength = Pointer.allocateCLong().setCLong(data.length());
             final int iRValue = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
 
             if(lLength.getInt() != 0 && iRValue == 0){
@@ -367,8 +364,12 @@ public class SqeazyFormat extends AbstractFormat {
                 if(sizeof == 2){
                     iMeta.setPixelType(FormatTools.UINT16);
                 }
-                else{
+                if(sizeof == 1){
                     iMeta.setPixelType(FormatTools.UINT8);
+                }
+                if(sizeof == 0){
+                    log().error("sqeazy header contains a pixel size of 0 Bytes (which is impossible)");
+                    return;
                 }
                 iMeta.setLittleEndian(true);
 
