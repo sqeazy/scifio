@@ -12,6 +12,7 @@ import io.scif.FormatException;
 import java.net.URL;
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.ByteOrder;
 import java.nio.ByteBuffer;
 
 import org.junit.Test;
@@ -27,6 +28,7 @@ import org.scijava.Context;
 import net.imagej.axis.Axes;
 
 import org.bridj.Pointer;
+import org.bridj.PointerIO;
 import org.bridj.CLong;
 import static org.bridj.Pointer.*;
 import sqeazy.bindings.SqeazyLibrary;
@@ -61,18 +63,99 @@ public class SQYParserTest {
 
     @Test public void testByteBufferOnUI16() throws FormatException {
 
-        final byte[] array = { (byte)0, (byte)100, (byte)1, (byte)0 };
-        assertEquals((byte)100, array[1]);
+        final byte[] array = { (byte)100, (byte)0, (byte)0, (byte)1 };
 
-        final ByteBuffer buf = ByteBuffer.wrap(array);
+        final ByteBuffer buf = ByteBuffer.wrap(array).order(ByteOrder.LITTLE_ENDIAN);
         assertEquals(4, buf.capacity());
 
-        assertEquals(100, buf.getShort(0));
-        assertEquals(256, buf.asShortBuffer().get(1));
-        assertNotEquals(256, buf.getShort(1));
+        assertEquals((short)100, buf.getShort(0));
+        assertNotEquals((short)256, buf.getShort(1));
+
+        assertEquals((short)100, buf.asShortBuffer().get(0));
+        assertEquals((short)256, buf.asShortBuffer().get(1));
 
     }
 
+    @Test public void testBytePointer_toUI16_tobytes() throws FormatException {
+
+        final byte[] array = { (byte)100, (byte)0, (byte)0, (byte)1 };
+        assertEquals((byte)100, array[0]);
+        assertEquals((byte)1, array[3]);
+
+        final Pointer<Byte> buf = pointerToBytes(array);
+        assertEquals(100, buf.getByteAtIndex(0));
+        assertEquals(  0, buf.getByteAtIndex(1));
+        assertEquals(  1, buf.getByteAtIndex(3));
+        assertEquals(  ByteOrder.LITTLE_ENDIAN, buf.order());
+
+        assertEquals((short)100, buf.getShortBuffer(2).get(0));
+        assertEquals((short)256, buf.getShortBuffer(2).get(1));
+
+        assertEquals((short)100, buf.getShorts()[0]);
+        assertEquals((short)256, buf.getShorts()[1]);
+
+        assertEquals((short)100, buf.getShortAtIndex(0));
+        assertEquals((short)256, buf.getShortAtIndex(1));
+
+        final ByteBuffer bybuf = buf.getByteBuffer(array.length);
+        final byte[] recoded = new byte[array.length];
+        bybuf.get(recoded);
+
+        assertEquals(recoded[1], array[1]);
+        assertEquals(recoded[2], array[2]);
+
+        final ByteBuffer lasttwo = ByteBuffer.wrap(buf.getBytesAtOffset(2L,2));
+        assertEquals(lasttwo.get(0), array[2]);
+        assertEquals(lasttwo.get(1), array[3]);
+    }
+
+    @Test public void testPointerShort_from_shortArray() throws FormatException {
+
+        final short[] array = { (short)100, (short)101, (short)96, (short)256 };
+        final Pointer<Short> sptr = pointerToShorts(array);
+        assertEquals(sptr.order(),ByteOrder.LITTLE_ENDIAN);
+        assertEquals(true,sptr.isOrdered());
+
+        final Pointer<Byte> ptr = sptr.as(PointerIO.getByteInstance());
+        assertEquals(ptr.order(),ByteOrder.LITTLE_ENDIAN);
+
+        assertEquals(ptr.getByteBuffer().capacity(),8);
+        assertNotEquals((byte)0, (byte)sptr.getByteBuffer().order(ByteOrder.BIG_ENDIAN).get(0));
+        assertNotEquals((byte)100,(byte)sptr.getByteBuffer().order(ByteOrder.BIG_ENDIAN).get(1));
+        assertEquals((byte)100, (byte)sptr.getByteBuffer().order(ByteOrder.LITTLE_ENDIAN).get(0));
+        assertEquals((byte)0,(byte)sptr.getByteBuffer().order(ByteOrder.LITTLE_ENDIAN).get(1));
+        assertEquals((byte)100, (byte)sptr.getByteBuffer().get(0));
+        assertEquals((byte)0,(byte)sptr.getByteBuffer().get(1));
+
+        assertEquals((byte)100, (byte)ptr.getByteBuffer().order(ByteOrder.LITTLE_ENDIAN).get(0));
+        assertEquals((byte)0,(byte)ptr.getByteBuffer().order(ByteOrder.LITTLE_ENDIAN).get(1));
+        assertEquals((byte)100, (byte)ptr.getByteBuffer().get(0));
+        assertEquals((byte)0,(byte)ptr.getByteBuffer().get(1));
+
+        assertEquals((short)100,sptr.getByteBuffer().getShort(0));
+        assertNotEquals((short)101,sptr.getByteBuffer().getShort(1));
+        assertNotEquals((short)96,sptr.getByteBuffer().getShort(2));
+        assertNotEquals((short)256,sptr.getByteBuffer().getShort(3));
+
+    }
+
+    @Test public void testByteBuffer_from_shortArray() throws FormatException {
+        final short[] array = { (short)100, (short)101, (short)96, (short)256 };
+        final ByteBuffer shorts = ByteBuffer.allocateDirect(array.length*2).order(ByteOrder.LITTLE_ENDIAN);
+
+        for(int i = 0;i<array.length;i++){
+            shorts.putShort(array[i]);
+        }
+
+        assertEquals((byte)100, (byte)shorts.get(0));
+        assertEquals((byte)0,(byte)shorts.get(1));
+        assertEquals((byte)101, (byte)shorts.get(2));
+        assertEquals((byte)0,(byte)shorts.get(3));
+        assertEquals((byte)96, (byte)shorts.get(4));
+        assertEquals((byte)0,(byte)shorts.get(5));
+        assertEquals((byte)0, (byte)shorts.get(6));
+        assertEquals((byte)1,(byte)shorts.get(7));
+    }
 
     @Test public void testCorrectWidthHeight() throws IOException, FormatException {
 
@@ -162,6 +245,7 @@ public class SQYParserTest {
         assertEquals((short)96,stack_buffer.asShortBuffer().get(2));
         assertNotEquals((short)96,stack_buffer.getShort(2));
 
+        assertEquals((short)151,sqyMeta.getData().getShortBuffer().get(48*(sqyMeta.getSizeX()*sqyMeta.getSizeY())+50*sqyMeta.getSizeX() + 33));
 
     }
 

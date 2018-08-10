@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import net.imagej.axis.Axes;
 import net.imglib2.Interval;
@@ -162,6 +163,10 @@ public class SqeazyFormat extends AbstractFormat {
         @Field(label = "width")
 		private int sizeX = 0;
 
+        /** greychannel pixel size */
+        @Field(label = "pixel_size")
+		private int pixel_size = 0;
+
 		/** Image height. */
 		@Field(label = "heigth")
 		private int sizeY = 0;
@@ -200,6 +205,14 @@ public class SqeazyFormat extends AbstractFormat {
 
 		public void setNthreads(final int nthreads) {
 			this.nThreads = nthreads;
+		}
+
+        public int getPixelSize() {
+			return pixel_size;
+		}
+
+		public void setPixelSize(final int pixel_size) {
+			this.pixel_size = pixel_size;
 		}
 
 		public int getSizeX() {
@@ -321,7 +334,7 @@ public class SqeazyFormat extends AbstractFormat {
                 }
                 final long bytes = stream.length();
 
-                log().info("Parsing file header");
+                log().debug("Parsing file header");
                 final ByteBuffer blob = ByteBuffer.allocate(4 << 10);
                 stream.seek(0);
                 stream.read(blob, 0, hdr_size);//read 4MB
@@ -349,14 +362,15 @@ public class SqeazyFormat extends AbstractFormat {
                     return;
                 }
                 final int sizeof = (int)lLength.getCLong();
+
+                meta.setPixelSize(sizeof);
                 if(sizeof == 2){
                     iMeta.setPixelType(FormatTools.UINT16);
                 }
                 else{
                     iMeta.setPixelType(FormatTools.UINT8);
                 }
-
-                iMeta.setLittleEndian(false);
+                iMeta.setLittleEndian(true);
 
                 lLength.setCLong((long)header.capacity());
                 sqy_status = SqeazyLibrary.SQY_Decompressed_NDims(bSQYHeader,lLength);
@@ -396,7 +410,8 @@ public class SqeazyFormat extends AbstractFormat {
                 final int planeSize = (int) iMeta.getAxisLength(Axes.X) * (int) iMeta.getAxisLength(Axes.Y);
                 final long nbytes = planeCount*planeSize*sizeof;
                 final Pointer<Byte> lDecodedBytes = Pointer.allocateBytes(nbytes);
-                log().info("allocating ByteBuffer of "+nbytes+" Bytes");
+                lDecodedBytes.order(ByteOrder.LITTLE_ENDIAN);
+                log().debug("allocating Pointer<Byte> of "+nbytes+" Bytes");
 
                 stream.seek(0);
                 final ByteBuffer encoded = ByteBuffer.allocate((int)bytes);
@@ -407,14 +422,14 @@ public class SqeazyFormat extends AbstractFormat {
 
                 int return_code = -1;
                 if(sizeof == 1){
-                    log().info("Decompressing 8-bit volume");
+                    log().debug("Decompressing 8-bit volume");
                     return_code = SqeazyLibrary.SQY_Decode_UI8(lCompressedBytes,
                                                                bytes,//lCompresssedBufferLength,
                                                  lDecodedBytes,
                                                  meta.getNthreads());
                 }
                 else if(sizeof == 2){
-                    log().info("Decompressing 16-bit volume");
+                    log().debug("Decompressing 16-bit volume");
                     return_code = SqeazyLibrary.SQY_Decode_UI16(lCompressedBytes,
                                                                 bytes,//lCompresssedBufferLength,
                                                   lDecodedBytes,
@@ -426,13 +441,11 @@ public class SqeazyFormat extends AbstractFormat {
                     return;
                 }
 
-                meta.setData(lDecodedBytes);
-
                 if(return_code == 0){
-                    log().info("Decompression successful "+lDecodedBytes.getBytes()[0]+", "+lDecodedBytes.getBytes()[1] +", "+lDecodedBytes.getBytes()[2] +"; "
-                               + lDecodedBytes.getShorts()[0]+", "+lDecodedBytes.getShorts()[1]+", "+lDecodedBytes.getShorts()[2]);
-
+                    log().info("Decompression successful");
+                    meta.setData(lDecodedBytes);
                 }
+
 			}
     }
 
@@ -473,14 +486,16 @@ public class SqeazyFormat extends AbstractFormat {
                 //                                  bounds);
                 // final int xAxis = meta.get(imageIndex).getAxisIndex(Axes.X);
                 // final int yAxis = meta.get(imageIndex).getAxisIndex(Axes.Y);
-                final int w = meta.getSizeX(), h = meta.getSizeY(), size = w*h;
+                final int w = meta.getSizeX(), h = meta.getSizeY(), npixels_per_plane = w*h;
+                final long pixel_size = meta.getPixelSize();
+                final long bytes_per_plane = npixels_per_plane*pixel_size;
+                final long planeOffset_bytes = planeIndex*bytes_per_plane;
 
-                final long planeOffset = planeIndex*w*h;
-                final long planeEnd = (long)(planeOffset+size);
-                // copy floating point data into byte buffer
+// copy floating point data into byte buffer
 
-                for (long i = planeOffset; i < planeEnd; i++) {
-                    bytes[(int)(i - planeOffset)] = meta.getData().getByteBuffer().get((int)i);
+                final byte[] decoded = meta.getData().getBytesAtOffset(planeOffset_bytes,(int)(bytes_per_plane));
+                for (int i = 0; i < bytes.length; i++) {
+                    bytes[i] = decoded[i];
                 }
 
 				return plane;

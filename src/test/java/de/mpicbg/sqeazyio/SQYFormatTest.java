@@ -14,6 +14,8 @@ import java.net.URL;
 import java.io.IOException;
 import java.util.Arrays;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 
 import org.junit.Test;
 import org.junit.After;
@@ -152,21 +154,38 @@ public class SQYFormatTest {
 		reader.setSource(stream);
 
 		// EXECUTE
+        final byte origin = plane.getBytes()[0];
+
 		reader.openPlane(0, (long)0, plane, // bounds,
                          new SCIFIOConfig());
 
-		// VERIFY
-        ByteBuffer read_plane = ByteBuffer.wrap(plane.getBytes());
-        assertEquals((byte)0,plane.getBytes()[0]);
+        assertNotEquals(plane.getBytes()[0],origin);
+		// VERIFY, first 3 pixels are 100, 101, 96 as 16-bit values
+        ByteBuffer read_plane = ByteBuffer.wrap(plane.getBytes()).order(ByteOrder.nativeOrder());
 
-        assertEquals((byte)0,read_plane.get(0));
-		assertNotEquals((short)42,read_plane.getShort(0));
-        assertEquals((short)100,read_plane.asShortBuffer().get(0));
+        //assertEquals((byte)0,plane.getBytes()[0]);
+        assertEquals(planeBytes,read_plane.capacity());
+        assertEquals((byte)100,read_plane.get(0));
+        assertEquals((byte)0,read_plane.get(1));
+        assertEquals((byte)101,read_plane.get(2));
+        assertEquals((byte)0,read_plane.get(3));
+        assertEquals((byte)96,read_plane.get(4));
+        assertEquals((byte)0,read_plane.get(5));
+
+        //assertEquals((short)100,read_plane.asShortBuffer().get(0));
+
+        final ShortBuffer read_shorts = read_plane.asShortBuffer();
+        assertEquals(planeBytes/2,read_shorts.capacity());
+		assertEquals((short)100,read_shorts.get(0));
+        assertEquals((short)101,read_shorts.get(1));
+        assertEquals((short)96,read_shorts.get(2));
+        assertNotEquals((short)151,read_plane.asShortBuffer().get(50*width + 33));
 
         // EXECUTE
 		reader.openPlane(0, (long)48, plane, // bounds,
                          new SCIFIOConfig());
-        read_plane = ByteBuffer.wrap(plane.getBytes());
+        read_plane = ByteBuffer.wrap(plane.getBytes()).order(ByteOrder.nativeOrder());
+        assertNotEquals((short)100,read_plane.asShortBuffer().get(0));
         assertEquals((short)151,read_plane.asShortBuffer().get(50*width + 33));
 
 	}
