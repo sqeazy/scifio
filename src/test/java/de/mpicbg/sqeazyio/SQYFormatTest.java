@@ -161,6 +161,7 @@ public class SQYFormatTest {
 
         assertNotEquals(plane.getBytes()[0],origin);
 		// VERIFY, first 3 pixels are 100, 101, 96 as 16-bit values
+        assertNotEquals(ByteBuffer.wrap(plane.getBytes()).order(),ByteOrder.nativeOrder());
         ByteBuffer read_plane = ByteBuffer.wrap(plane.getBytes()).order(ByteOrder.nativeOrder());
 
         //assertEquals((byte)0,plane.getBytes()[0]);
