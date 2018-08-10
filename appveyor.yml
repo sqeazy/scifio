@@ -16,7 +16,7 @@ init: []
 install: []
 
 build_script:
-  - mvn clean build
+  - mvn clean install
   
 test_script:
   - mvn clean test
