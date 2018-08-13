@@ -36,8 +36,10 @@ import static org.junit.Assert.*;
 import io.scif.img.IO;
 
 import java.net.URL;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
@@ -56,9 +58,9 @@ public class TIFFFormatTest {
 	 * Tests if TIFFs without metadata in the header are read sensibly.
 	 */
 	@Test
-	public void testTiffWithoutMetadata() {
+	public void testTiffWithoutMetadata() throws URISyntaxException {
 		final URL tiffWithoutMetadata = getClass().getResource("tiny-10x10x3.tif");
-		final Path fnio = Paths.get(tiffWithoutMetadata.getPath());
+		final Path fnio = Paths.get(tiffWithoutMetadata.toURI());
 
 		final ImgPlus<?> img = IO.openImgs(fnio.toAbsolutePath().toString()).get(0);
 
