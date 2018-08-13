@@ -9,6 +9,7 @@ import io.scif.io.RandomAccessInputStream;
 import io.scif.ImageMetadata;
 import io.scif.FormatException;
 
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.io.IOException;
 import java.nio.file.*;
@@ -157,19 +158,22 @@ public class SQYParserTest {
         assertEquals((byte)1,(byte)shorts.get(7));
     }
 
-    @Test public void testCorrectWidthHeight() throws IOException, FormatException {
+    @Test public void testCorrectWidthHeight() throws IOException, FormatException, URISyntaxException {
 
         final URL tiny = getClass().getResource("flybrain.sqy");
         assertNotEquals(tiny,null);
 
-        final String fpath = tiny.getPath();
-        final Path fnio = Paths.get(fpath);
-        assertThat(fpath, containsString("de/mpicbg/sqeazyio/flybrain.sqy"));
+        final Path fnio = Paths.get(tiny.toURI());
+
+        assert(fnio.endsWith("flybrain.sqy"));
         assertEquals(Files.isRegularFile(fnio), true);
 
         final SqeazyFormat.Metadata sqyMeta = new SqeazyFormat.Metadata();
-        final RandomAccessInputStream stream = new RandomAccessInputStream(context, fpath);
-        final int blockLen = 4 << 10;
+        final RandomAccessInputStream stream = new RandomAccessInputStream(context, fnio.toString());
+        int blockLen = 4 << 10;
+        if( stream.length() > blockLen ){
+            blockLen = (int)stream.length();
+        }
         final String data = stream.readString(blockLen);
         assertThat(data, containsString("pipename"));
         assertThat(data, containsString("rank"));
@@ -192,18 +196,18 @@ public class SQYParserTest {
 
     }
 
-        @Test public void testCorrectness_UI16() throws IOException, FormatException {
+        @Test public void testCorrectness_UI16() throws IOException, FormatException, URISyntaxException {
 
         final URL tiny = getClass().getResource("droso.sqy");
         assertNotEquals(tiny,null);
-
-        final String fpath = tiny.getPath();
-        final Path fnio = Paths.get(fpath);
-        assertThat(fpath, containsString("de/mpicbg/sqeazyio/droso.sqy"));
+                
+        final Path fnio = Paths.get(tiny.toURI());
+        assert(fnio.endsWith("droso.sqy"));
+        
         assertEquals(Files.isRegularFile(fnio), true);
 
         final SqeazyFormat.Metadata sqyMeta = new SqeazyFormat.Metadata();
-        final RandomAccessInputStream stream = new RandomAccessInputStream(context, fpath);
+        final RandomAccessInputStream stream = new RandomAccessInputStream(context, fnio.toString());
         int blockLen = 4 << 10;
         if( stream.length() > blockLen ){
             blockLen = (int)stream.length();

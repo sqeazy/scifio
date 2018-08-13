@@ -85,7 +85,7 @@ public class SQYCheckerTest {
         assertThat(data, containsString("rank"));
 
         final Pointer<Byte> bHdr = pointerToCString(data);
-        final Pointer<CLong> lLength = Pointer.allocateCLong().setLong(data.length());
+        final Pointer<CLong> lLength = Pointer.allocateCLong().setCLong(data.length());
         final int iRValue = SqeazyLibrary.SQY_Header_Size(bHdr,lLength);
 
         assertEquals(iRValue,0);
