@@ -493,8 +493,9 @@ public class SqeazyFormat extends AbstractFormat {
                 final long planeOffset_bytes = planeIndex*bytes_per_plane;
 
 // copy floating point data into byte buffer
+                final Pointer<Byte> ptr = meta.getData().next(planeOffset_bytes);
 
-                final byte[] decoded = meta.getData().getBytesAtOffset(planeOffset_bytes,(int)(bytes_per_plane));
+                final byte[] decoded = ptr.getBytes((int)(bytes_per_plane));
                 for (int i = 0; i < bytes.length; i++) {
                     bytes[i] = decoded[i];
                 }

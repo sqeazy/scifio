@@ -105,7 +105,7 @@ public class SQYParserTest {
         assertEquals(recoded[1], array[1]);
         assertEquals(recoded[2], array[2]);
 
-        final ByteBuffer lasttwo = ByteBuffer.wrap(buf.getBytesAtOffset(2L,2));
+        final ByteBuffer lasttwo = ByteBuffer.wrap(buf.next(2L).getBytes(2));
         assertEquals(lasttwo.get(0), array[2]);
         assertEquals(lasttwo.get(1), array[3]);
     }
