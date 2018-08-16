@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.lang.Math;
 
 import net.imagej.axis.Axes;
 import net.imglib2.Interval;
@@ -246,15 +247,47 @@ public class SqeazyFormat extends AbstractFormat {
 
             //we should extract the header here from this->data
             //then we could populate the
+            log().debug("populateImageMetadata called with "+ptr.getValidBytes()+" Bytes being already decoded");
 
+            createImageMetadata(1);
 			final ImageMetadata iMeta = get(0);
 
-			iMeta.setPlanarAxisCount(3);//2?
-			iMeta.setPixelType(FormatTools.UINT16);//decide this based on type
-			iMeta.setBitsPerPixel(16);
-			iMeta.setOrderCertain(true);
-			iMeta.setLittleEndian(true);//assuming the data was produced under x86 predominantly
-			iMeta.setMetadataComplete(true);
+            if(ptr.getValidBytes() != 0){
+                //if everything was already decoded, we can fill the data that was already provided
+                iMeta.setPlanarAxisCount(3);//2?
+                iMeta.setOrderCertain(true);
+                iMeta.setLittleEndian(true);//assuming the data was produced under x86 predominantly
+
+                if(getSizeX()!=0){
+                    iMeta.setAxisLength(Axes.X, getSizeX());}
+                if(getSizeY()!=0){
+                    iMeta.setAxisLength(Axes.Y, getSizeY());}
+                if(getSizeZ()!=0){
+                    iMeta.setAxisLength(Axes.Z, getSizeZ());
+                }
+
+                if(getPixelSize()!=0){
+
+                    if(getPixelSize()==2){
+
+                        iMeta.setPixelType(FormatTools.UINT16);//decide this based on type
+                        iMeta.setBitsPerPixel(16);
+
+                    }
+
+                    if(getPixelSize()==1){
+
+                        iMeta.setPixelType(FormatTools.UINT8);//decide this based on type
+                        iMeta.setBitsPerPixel(8);
+
+                    }
+                }
+
+            }
+
+            iMeta.setAxisLength(Axes.CHANNEL, 1);
+            iMeta.setAxisLength(Axes.TIME, 1);
+            iMeta.setMetadataComplete(true);
 		}
 
 		@Override
@@ -363,9 +396,11 @@ public class SqeazyFormat extends AbstractFormat {
                 meta.setPixelSize(sizeof);
                 if(sizeof == 2){
                     iMeta.setPixelType(FormatTools.UINT16);
+                    iMeta.setBitsPerPixel(16);
                 }
                 if(sizeof == 1){
                     iMeta.setPixelType(FormatTools.UINT8);
+                    iMeta.setBitsPerPixel(8);
                 }
                 if(sizeof == 0){
                     log().error("sqeazy header contains a pixel size of 0 Bytes (which is impossible)");
@@ -404,8 +439,6 @@ public class SqeazyFormat extends AbstractFormat {
                     meta.setSizeZ((int)lShape.getCLongAtIndex(ndims-3));
                     sizeZ = (int)meta.getSizeZ();
                 }
-                iMeta.setAxisLength(Axes.CHANNEL, 1);
-                iMeta.setAxisLength(Axes.TIME, 1);
 
                 final int planeCount = sizeZ * sizeC * sizeT;
                 final int planeSize = (int) iMeta.getAxisLength(Axes.X) * (int) iMeta.getAxisLength(Axes.Y);
@@ -479,6 +512,7 @@ public class SqeazyFormat extends AbstractFormat {
                 // update the data by reference. Ideally, this limits memory problems
 				// from rapid Java array construction/destruction.
 				final byte[] bytes = plane.getBytes();
+                final ByteBuffer planeBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.nativeOrder());
 				//Arrays.fill(bytes, 0, bytes.length, (byte) 0);
                 // FormatTools.checkPlaneForReading(meta,
                 //                                  imageIndex,
@@ -487,18 +521,22 @@ public class SqeazyFormat extends AbstractFormat {
                 //                                  bounds);
                 // final int xAxis = meta.get(imageIndex).getAxisIndex(Axes.X);
                 // final int yAxis = meta.get(imageIndex).getAxisIndex(Axes.Y);
-                final int w = meta.getSizeX(), h = meta.getSizeY(), npixels_per_plane = w*h;
-                final long pixel_size = meta.getPixelSize();
-                final long bytes_per_plane = npixels_per_plane*pixel_size;
+                final int w = meta.getSizeX(), h = meta.getSizeY();
+                final long npixels_per_plane = w*h;
+                final long bytes_per_plane = npixels_per_plane*meta.getPixelSize();
                 final long planeOffset_bytes = planeIndex*bytes_per_plane;
 
-// copy floating point data into byte buffer
-                final Pointer<Byte> ptr = meta.getData().next(planeOffset_bytes);
+                final int frames_expected = bytes.length / (int)bytes_per_plane;
 
-                final byte[] decoded = ptr.getBytes((int)(bytes_per_plane));
-                for (int i = 0; i < bytes.length; i++) {
-                    bytes[i] = decoded[i];
-                }
+// copy floating point data into byte buffer
+
+                log().info("Copying "+bytes.length+"/"+meta.getData().getValidBytes()+" Bytes into ByteArrayPlane, "+frames_expected+" frame(s) expected");
+                final Pointer<Byte> current_ptr = meta.getData().next(planeOffset_bytes);
+
+                final long bytes_to_copy = Math.min(current_ptr.getValidBytes(),
+                                                    (long)bytes.length);
+
+                planeBuffer.put(current_ptr.getByteBuffer(bytes_to_copy).order(ByteOrder.nativeOrder()));
 
 				return plane;
 			}
