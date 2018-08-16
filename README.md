@@ -4,4 +4,13 @@
 
 # scifio
 
-Reader Implementation using scifio for fiji interoperability
+Fiji Reader Implementation for sqeazy files using scifio
+
+## Installation
+
+``` shell
+$ git clone git@github.com:sqeazy/scifio
+$ cd scifio
+$ mvn -Dimagej.app.directory=/path/to/Fiji.app clean install
+```
+
